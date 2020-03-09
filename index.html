@@ -134,7 +134,7 @@ Thanks to University of Iowa's Digital Scholarship and Publishing Studio for hos
     });
 
     //add a scale bar
-    //L.control.scale().addTo(map);
+    L.control.scale({position:'bottomright'}).addTo(map);
 
     //load the data asynchronously
     d3.queue()
@@ -267,7 +267,18 @@ Thanks to University of Iowa's Digital Scholarship and Publishing Studio for hos
       sequenceUI(orangeCircleMarkers); // calls the function to make the time slider
       createTemporalLegend(currentDate); // produces temporal legend upon map loading
       updateCircles(orangeCircleMarkers);
+/*
+      // define layers
+      var overlays = {
+        "All Brinton Shows": blackCircleMarkers,
+        "Brinton Shows by Date": orangeCircleMarkers,
+      };
 
+      // send the layers to the layer control
+      L.control.layers(null, overlays, {
+        collapsed: false,
+      }).addTo(map);
+*/
     }; //end drawMap function
 
     // add a temporal legend in sync with the UI slider
