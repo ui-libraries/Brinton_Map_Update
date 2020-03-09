@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- notes
 Rob Shepard, GIS Specialist at University of Iowa Libraries
+Jay Bowen, GIS Specialist at University of Iowa Libraries
 Ethan DeGross, Web Developer at University of Iowa Libraries
 Meghan Saak, Junior Web Developer at University of Iowa Libraries
 Thanks to University of Iowa's Digital Scholarship and Publishing Studio for hosting the content
@@ -171,6 +172,8 @@ Thanks to University of Iowa's Digital Scholarship and Publishing Studio for hos
               fillOpacity: 1.0
             });
           });
+
+          // bind a popup window to each circle marker
           layer.bindPopup("<h3 style='font-size:20px'>" + props.Town + ", " + props.State + "</h3>" +
             "<h4 style='font-size:12px'>" + "<br>" + props.Month + " " + props.Day + ", " + props.Year +
             "<br>Venue: " + props.Venue +
@@ -178,22 +181,7 @@ Thanks to University of Iowa's Digital Scholarship and Publishing Studio for hos
             "<br>House Take: " + props.House_Takes_P +
             "<br>Notes: " + props.Notes + "</h4>"
           );
-          /*
-                      // define what happens on click
-                      layer.on("click", function (e) {
 
-                        var props = layer.feature.properties;
-
-                        layer.bindPopup("<h3>" + props.Town + ", " + props.State + "</h3>" +
-                                          "<h4>" + props.Month + " " + props.Day + ", " + props.Year +
-                                          "<br>Venue: " + props.Venue +
-                                          "<br>Amount Made($): " + props.Amount_Made +
-                                          "<br>House Take($): " + props.House_takes +
-                                          "<br>Notes: " + props.Notes + "</h4>"
-                                          );
-
-                      });
-          */
           // define what happens on mouseout
           layer.on("mouseout", function(e) {
 
@@ -225,6 +213,49 @@ Thanks to University of Iowa's Digital Scholarship and Publishing Studio for hos
             fillOpacity: 0.5
           })
         }, //end pointToLayer
+
+        // restyle on mouseover, reset style on mouseout
+        onEachFeature: function(feature, layer) {
+
+          var props = layer.feature.properties;
+
+          // define what happens on mouseover
+          layer.on("mouseover", function(e) {
+            layer.setStyle({
+              radius: 7,
+              fillColor: "yellow",
+              color: "#3978BF",
+              weight: 1,
+              opacity: 0.8,
+              fillOpacity: 1.0
+            });
+          });
+
+          // bind a popup window to each circle marker
+          layer.bindPopup("<h3 style='font-size:20px'>" + props.Town + ", " + props.State + "</h3>" +
+            "<h4 style='font-size:12px'>" + "<br>" + props.Month + " " + props.Day + ", " + props.Year +
+            "<br>Venue: " + props.Venue +
+            "<br>Amount Made: " + props.Amount_Made_D +
+            "<br>House Take: " + props.House_Takes_P +
+            "<br>Notes: " + props.Notes + "</h4>"
+          );
+
+          // define what happens on mouseout
+          layer.on("mouseout", function(e) {
+
+            // style the points
+            layer.setStyle({
+              radius: 7,
+              fillColor: "orange",
+              color: "black",
+              weight: 1,
+              opacity: 0.8,
+              fillOpacity: 0.5
+            });
+
+          });
+
+        } // end onEachFeature
       });
 
       //fit the map to the extent of the circle markers upon drawing
