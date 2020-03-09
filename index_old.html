@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<!-- notes
+Rob Shepard, GIS Specialist at University of Iowa Libraries
+Ethan DeGross, Web Developer at University of Iowa Libraries
+Meghan Saak, Junior Web Developer at University of Iowa Libraries
+Thanks to University of Iowa's Digital Scholarship and Publishing Studio for hosting the content
+-->
+<html>
+  <head>
+    <title>Brinton Show Map</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- INCLUDES -->
+		<link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
+    <!-- include leaflet / slider css, js local files -->
+    <script src="https://cdn.jsdelivr.net/leaflet/1.0.0-rc.3/leaflet-src.js"></script>
+
+    <link rel="stylesheet" href="main.css">
+    <link rel="stylesheet" href="public/leaflet-1/leaflet.css" />
+    <!--OLD LINK IS HERE - <link rel="stylesheet" href="https://cdn.jsdelivr.net/leaflet/1.0.0-rc.3/leaflet.css" /> -->
+    <script src="dataAndSlider.js"></script>
+    <!-- include a pretty little stamenizer -->
+    <script type="text/javascript" src="https://maps.stamen.com/js/tile.stamen.js?v1.3.0"></script>
+    <!-- include fuse first, then the leaflet plugins that use fuse searching -->
+    <script src="public/fuse-1.2.1/fuse.min.js"></script>
+    <script src="public/leafletFuseSearch-noVersion/leafletfuse.js"></script>
+    <link rel="stylesheet" href="public/leafletFuseSearch-noVersion/leafletfuse.css" type="text/css"/>
+    <!-- jquery scripts and css -->
+    <script src="https://code.jquery.com/jquery-1.9.1.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.9.2/jquery-ui.js"></script>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.9.2/themes/base/jquery-ui.css" type="text/css">
+    <!-- Include this library for mobile touch support (not tested) -->
+    <script src="public/jqueryUiTouchPunch-0.2.2/jquery.ui.touch-punch.min.js"></script>
+    <!-- Load Esri Leaflet from CDN -->
+    <script src="https://cdn.jsdelivr.net/leaflet.esri/2.0.2/esri-leaflet.js"></script>
+    <!-- include json data points -->
+    <script src="brintondata2.js"></script>
+
+
+	  <link rel="stylesheet" type="text/css" href="css/style.css">
+	  <link rel="stylesheet" type="text/css" href="css/navwrap.css">
+	  <style type="text/css">
+	    #map {
+        width: 100%;
+        height: 100%;
+        left: 1px;
+		top: -1px;
+        position: absolute;
+      }
+		</style>
+  </head>
+
+
+  <body>
+    <!--hamburger icon to navigate the different views -->
+    <!-- <img id="icon" src="icon.png" width="75" height="75" style="position:fixed; border-radius: 8px; left:-10px;"> -->
+
+    <!-- provide the map with a div to live inside -->
+    <div id="map" style="width: 100%; height: 100%; position: absolute"></div>
+
+	<!-- static div that displays location information -->
+  	<div id="feature_infos">
+  		<div id="info"><p>Click on the dots to see information on the venues Brinton traveled to or use the slider above to show the path he took from location to location</p></div>
+  	</div>
+	<!-- the html commented out below isn't fully implemented, started to make a search bar -->
+	 <div id="sliderBtns">
+		<img id="left" src="images/leftArrow.png" width="50" height="50" style="padding-right: 15px;"></img>
+		<img id="right" src="images/rightArrow.png" width="50" height="50"></img>
+	</div>
+	<div id="search_bar">
+  		<div id="radioBtns">
+		  <input type="radio" id="notesCheck" name="search">
+		  <label for="notesCheck">Show Locations with Notes</label>
+		  <br>
+		  <input type="radio" id="lessThan50" name="search">
+		  <label for="lessThan50">Show Locations Where Profit < $50</label>
+		  <br>
+		  <input type="radio" id="greaterThan50" name="search">
+		  <label for="greaterThan50">Show Locations Where Profit > $50</label>
+		</div>
+		<div>
+			<button type="submit" onclick="submitted()">Submit</button>
+		</div>
+		<div id="searchBtns">
+			<img id="left2" src="images/leftArrow.png" width="50" height="50" style="padding-right: 15px;"></img>
+			<img id="right2" src="images/rightArrow.png" width="50" height="50"></img>
+		</div>
+  	</div> 
+
+    <script>
+	  	  var myIcon = L.icon({
+        iconUrl: 'my-icon.png',
+        iconRetinaUrl: 'my-icon@2x.png',
+        iconSize: [1, 1],
+        iconAnchor: [1, 1],
+        popupAnchor: [-1, -1]
+      });
+
+
+	 var mbAttr = 'Map data &copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors, ' +
+			'<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+			'Imagery © <a href="https://mapbox.com">Mapbox</a>';
+
+//here I use an esri tiled WMS layer, a tiled layer out on mapbox, and a GeoServer tiled map service. This is really for my own reference... PS the commas and "names = " stuff replaces variables. You call up all the layers in one spot
+
+	 var blanktile =  L.esri.tiledMapLayer({url: "https://gis.lib.uiowa.edu/gislib1/rest/services/brinton/brintonmap/MapServer"}),
+  	 grayscale = L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoicmNzaGVwYXJkIiwiYSI6IjYwYjI0NzdmNDQwM2YzNTc1ODI2NWZhNTU1ZTVmNjY4In0.ct_UnOxwtV_WIGwzyG0Rxw', {id: 'mapbox.light', attribution: mbAttr}),
+  	 dark = L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoicmNzaGVwYXJkIiwiYSI6IjYwYjI0NzdmNDQwM2YzNTc1ODI2NWZhNTU1ZTVmNjY4In0.ct_UnOxwtV_WIGwzyG0Rxw', {id: 'mapbox.dark', attribution: mbAttr}),
+  	 opengeo = L.tileLayer.wms('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}),
+  	 stamenbackground = L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/terrain-background/{z}/{x}/{y}.{ext}', {
+        attribution: 'Map tiles by <a href="https://stamen.com">Stamen Design</a>, <a href="https://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      	subdomains: 'abcd',
+      	minZoom: 0,
+      	maxZoom: 18,
+      	ext: 'png'
+      }),
+	   stamenmap = L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/terrain/{z}/{x}/{y}.{ext}', {
+      	attribution: 'Map tiles by <a href="https://stamen.com">Stamen Design</a>, <a href="https://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      	subdomains: 'abcd',
+      	minZoom: 0,
+      	maxZoom: 18,
+      	ext: 'png'
+      });
+
+
+    var map = L.map('map', {
+	  center: [37.2, -87],
+	  zoom: 6,
+    minZoom: 5,
+    maxZoom: 12,
+	  layers: [blanktile],
+	  zoomControl: false
+	  });
+
+    //sets the map panning boundary so it can't go past the United States
+    var corner1 = L.latLng(51, -125),
+    corner2 = L.latLng(23, -69)
+    var bounds = L.latLngBounds(corner1, corner2);
+    map.setMaxBounds(bounds);
+
+    map.on('drag', function() {
+        map.panInsideBounds(bounds, { animate: true });
+    });
+
+
+      // original open street maps tiles, remove above few lines and uncomment these
+      /*L.tileLayer('https://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(map);*/
+
+      // onEachFeature generate a popup for each location
+      // those params are coming automatically from the geoJson method
+      var onEachFeature = function(feature, layer) {
+        if (feature.properties) {
+    			var prop = feature.properties;
+    			var houseTakes, amount;
+    			if (prop['House_takes'] != "No Data"){
+    				houseTakes = prop['House_takes'] +'%<br>';
+    			} else{
+    				houseTakes = prop['House_takes'] +'<br>';
+    			}
+    			if (prop['Amount_Made'] != "No Data"){
+    				amount = '$'+prop['Amount_Made'] +'<br>';
+    			} else{
+    				amount = prop['Amount_Made'] +'<br>';
+    			}
+				//used if a popup directly over the location is needed
+                /*var popup = '<h3>'+prop['Venue']+'  '+prop['Town']+', '+prop['State']+'<br>'+prop['Month']+' '+prop['Day']+' '+prop['Year']+'</h3>'+'Amount Made: '+ amount +'House take: '+ houseTakes +'Notes: '+prop['Notes'];*/
+
+    			// you must create a layer property on each feature or else
+    			// the search results won't know where the item is on the map / layer
+    			feature.layer = layer;
+    			//layer.bindPopup(popup, {maxWidth: "auto"});
+
+				//used layer.on click so the data could be displayed in the static div rather than as a popup attached to the dot
+    			layer.on('click', function(e) {
+    				//added the following condition so there wouldn't be a blank spot if there wasn't a venue listed
+    				if ((prop['Venue'] == "") || (prop['Venue'] == prop['Town']+', '+prop['State'])) {
+    					document.getElementById("info").innerHTML = '<h4>'+prop['Town']+', '+prop['State']+'<br>'+prop['Month']+' '+prop['Day']+', '+prop['Year']+'</h4>'+'<p>'+'Amount Made: '+ amount +'House take: '+ houseTakes +'Notes: '+prop['Notes']+'</p>';
+    				} else {
+    					document.getElementById("info").innerHTML = '<h4>'+prop['Venue']+'<br>'+prop['Town']+', '+prop['State']+'<br>'+prop['Month']+' '+prop['Day']+', '+prop['Year']+'</h4>'+'<p>'+'Amount Made: '+ amount +'House take: '+ houseTakes +'Notes: '+prop['Notes']+'</p>';
+    				}
+    			})
+    }// end if
+      }; // end onEachFeature
+
+      // used by the generic "all locations" layer
+      var blueCircleMarkers = {
+        radius: 7,
+        fillColor: "#00AEEF",
+        color: "#3978BF",
+        weight: 1,
+        opacity: 0.8,
+        fillOpacity: 0.5
+      };
+
+		//used by brintondata layer
+	   var CircleMarkers = {
+        radius: 6,
+        fillColor: "#000000",
+        color: "#ffa500",
+        weight: 2,
+        opacity: 0.1,
+        fillOpacity: 0.1,
+		stroke: true,
+      };
+
+      // used by the timesliding layer
+      var orangeCircleMarkers = {
+        radius: 6,
+        fillColor: "#ffa500",
+        color: "#000000",
+        weight: 1,
+        opacity: 1,
+        fillOpacity: 0.9,
+		    stroke: true,
+      };
+
+      var purpleCircleMarkers = {
+        radius: 7,
+        fillColor: "#551a8b",
+        color: "#000000",
+        weight: 1,
+        opacity: 1,
+        fillOpacity: 0.9
+      };
+
+	  var yellowCircleMarkers = {
+        radius: 7,
+        fillColor: "#ffff00",
+        color: "#000000",
+        weight: 1,
+        opacity: 1,
+        fillOpacity: 0.9
+      };
+
+	  var greenCircleMarkers = {
+        radius: 7,
+        fillColor: "#00cc00",
+        color: "#000000",
+        weight: 1,
+        opacity: 0.5,
+        fillOpacity: 0.5
+      };
+
+      // generate a layer of markers for all the locations
+ //    L.geoJson(brintondata, {
+        // add popups
+ //       onEachFeature: onEachFeature,
+ //       pointToLayer: function(feature, latlng) {
+//          return L.circleMarker(latlng, CircleMarkers);
+//        }
+//     }).addTo(map);
+
+
+
+       //now make a timeline layer that the slider can manipulate
+      var timelineLayer = L.geoJson(brintondata2, {
+        onEachFeature: onEachFeature,
+        pointToLayer: function(feature, latlng) {
+          return L.circleMarker(latlng, orangeCircleMarkers);
+        }
+      });
+
+      // make a search layer
+      var searchLayer = L.geoJson(brintondata2, {
+        onEachFeature: onEachFeature,
+        pointToLayer: function(feature, latlng) {
+          return L.circleMarker(latlng, greenCircleMarkers);
+        }
+      });
+     searchLayer.addTo(map);
+
+
+      // create the slider
+      var sliderControl = L.control.sliderControl({
+          position: "topright",
+          layer: timelineLayer,
+          range: false // gives it a bottom and a top slider
+      });
+
+      map.addControl(sliderControl);
+      sliderControl.startSlider(); // initialize
+
+      // Add fuse search control
+      var searchOptions = {
+        position: 'topleft',
+        title: 'Search',
+        placeholder: 'Type here',
+        maxResultLength: 10,
+        caseSensitive: false,
+        showInvisibleFeatures: true,
+        layerToToggle: searchLayer,
+        threshold: 0.5, // default is .5, will match imperfect results
+        showResultFct: function(feature, container) {
+          props = feature.properties;
+          var name = L.DomUtil.create('b', null, container);
+          name.innerHTML = props.Town;
+          container.appendChild(L.DomUtil.create('br', null, container));
+          var cat = props.Town ? props.Venue : props.Town,
+              info = cat;
+          container.appendChild(document.createTextNode(info));
+        }
+      };
+      var searchControl = L.control.fuseSearch(searchOptions);
+      map.addControl(searchControl);
+      searchControl.indexFeatures(brintondata, ['Town', 'Notes']);
+
+      displayFeatures(brintondata, searchLayer);
+
+      function displayFeatures(features, layer) {
+        var popup = L.DomUtil.create('div', 'tiny-popup', map.getContainer());
+        for (var id in features) {
+          var feat = features[id];
+          var cat = feat.properties.NAME;
+          var site = L.geoJson(feat, {
+            pointToLayer: function(feature, latLng) {
+              var marker = L.marker(latLng, {
+			              icon: myIcon,
+                    keyboard: false,
+                    riseOnHover: true
+              });
+              if (! L.touch) {
+                marker.on('mouseover', function(position) {
+                  // can put text in here when hovering search
+                  // popup.innerHTML = 'Testing';
+                  // L.DomUtil.setPosition(popup, pos);
+                  // L.DomUtil.addClass(popup, 'visible');
+                }).on('mouseout', function(position) {
+                  L.DomUtil.removeClass(popup, 'visible');
+                });
+              }
+              return marker;
+            },
+            onEachFeature: onEachFeature
+          });
+          if (layer !== undefined) {
+              layer.addLayer(site);
+          }
+        }
+        return layer;
+      };
+	  //adds a layer for some other geojson, just change out "nashpeople" with another file
+
+//	    var grayscale = L.tileLayer(mbUrl, {id: 'mapbox.mapbox-terrain-v2', attribution: mbAttr});
+
+	//main layer that shows all the black dots with orange outlines
+	 var brintondata = new L.geoJson(brintondata2, {
+  	  onEachFeature: onEachFeature,
+      pointToLayer: function (feature, latlng) {
+          return L.circleMarker(latlng, CircleMarkers);
+    }}).addTo(map);
+
+
+//	  		var baseLayers = {
+//			"Dark": grayscale
+//		};
+
+	  		var overlays = {
+			"brintondata": brintondata
+	  };
+
+			var baseMaps = {
+			"<strong>Layer List</strong>": blanktile
+//			"Modern Map": grayscale,
+//			"opengeo": opengeo
+			};
+	
+		//hides leaflet label
+      $('.leaflet-control-attribution').hide();
+	  //L.control.layers(baseMaps, {collapsed:false}).addTo(map);
+
+    document.getElementById('icon').onclick = function() {
+        ipcRenderer.send('closeMap');
+    }
+
+    var ipcRenderer = require('electron').ipcRenderer;
+
+	//when there is any activity, send a message to the main window so the inactivity timer can be reset
+    window.onclick = function() {
+      ipcRenderer.send('reset');
+    }
+
+    brintondata.onclick = function() {
+      ipcRenderer.send('reset');
+    }
+
+	//resets the slider and removes the orange dots whenever the window is closed (user navigates to different window or the
+	//inactivity timer starts
+	ipcRenderer.on('resetBtns', function() {
+		//remove all the layers created by the slider (stored in sliderControl variable made above)
+		for (i=0; i <= sliderControl.options.maxValue; i++) {
+            map.removeLayer(sliderControl.options.markers[i]);
+        }
+		//reset the value of the slider back to zero
+		dateSlider.slider('value', 0);
+		//reset the message in the static information div
+		document.getElementById("info").innerHTML = '<p>Click on the dots to see information on the venues Brinton traveled to or use the slider above to show the path he took from location to location</p>';
+	})
+
+	//////////////////////////////////////////////////////
+	//everything below was used prototyping a search bar//
+	slider.defaultValue = 0;
+	var num = 0;
+	var markers = []
+	for (i=0; i<brintondata2.length; i++) {
+		var latlng = [brintondata2[i].properties.Latitude, brintondata2[i].properties.Longitude]
+		markers.push(L.circleMarker(latlng, orangeCircleMarkers));
+	}
+	var displayData = function(data, number) {
+		var prop = data[number].properties;
+		var houseTakes, amount;
+		if (prop['House_takes'] != "No Data"){
+			houseTakes = prop['House_takes'] +'%<br>';
+		}else{
+			houseTakes = prop['House_takes'] +'<br>';
+		}
+		if (prop['Amount_Made'] != "No Data"){
+			amount = '$'+prop['Amount_Made'] +'<br>';
+		}else{
+			amount = prop['Amount_Made'] +'<br>';
+		}
+
+		//added the following condition so there wouldn't be a blank spot if there wasn't a venue listed
+		if ((prop['Venue'] == "") || (prop['Venue'] == prop['Town']+', '+prop['State'])) {
+			document.getElementById("info").innerHTML = '<h4>'+prop['Town']+', '+prop['State']+'<br>'+prop['Month']+' '+prop['Day']+', '+prop['Year']+'</h4>'+'<p>'+'Amount Made: '+ amount +'House take: '+ houseTakes +'Notes: '+prop['Notes']+'</p>';
+		}
+		else {
+			document.getElementById("info").innerHTML = '<h4>'+prop['Venue']+'<br>'+prop['Town']+', '+prop['State']+'<br>'+prop['Month']+' '+prop['Day']+', '+prop['Year']+'</h4>'+'<p>'+'Amount Made: '+ amount +'House take: '+ houseTakes +'Notes: '+prop['Notes']+'</p>';
+		}
+	}
+	document.getElementById('left').addEventListener('click', function() {
+		if (num >= 0) {
+			map.removeLayer(markers[num+1]);
+			num--;
+		}
+		displayData(brintondata2, num);
+	})
+	document.getElementById('right').addEventListener('click', function() {
+		map.addLayer(markers[num]);
+		displayData(brintondata2, num);
+		num++;
+	})
+
+	var notesCheck = document.getElementById('notesCheck');
+	var checkMarkers = [];
+	var checkData = [];
+	var processData = function(data, markers) {
+		var val = 0;
+		document.getElementById('left2').addEventListener('click', function() {
+			if (val >= 0) {
+				map.removeLayer(markers[val]);
+				displayData(data, val);
+				val--;
+			}
+		})
+		document.getElementById('right2').addEventListener('click', function() {
+			if (val == -1) {
+				val ++;
+			}
+			map.addLayer(markers[val]);
+			displayData(data, val);
+			val++;
+		})
+	}
+	var submitted = function() {
+		if (notesCheck.checked) {
+			for (i=0; i<brintondata2.length; i++) {
+				var notes = brintondata2[i].properties.Notes;
+				if (notes != "No Data") {
+					var latlng = [brintondata2[i].properties.Latitude, brintondata2[i].properties.Longitude]
+					checkMarkers.push(L.circleMarker(latlng, orangeCircleMarkers));
+					checkData.push(brintondata2[i])
+				}
+			}
+			processData(checkData, checkMarkers);
+		}
+	}
+    </script>
+
+  </body>
+</html>

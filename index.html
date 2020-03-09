@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<!-- notes
+Rob Shepard, GIS Specialist at University of Iowa Libraries
+Ethan DeGross, Web Developer at University of Iowa Libraries
+Meghan Saak, Junior Web Developer at University of Iowa Libraries
+Thanks to University of Iowa's Digital Scholarship and Publishing Studio for hosting the content
+-->
+<html>
+
+<head>
+  <title>Brinton Show Map</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- INCLUDES -->
+
+  <!-- Add Montserrat fonts -->
+  <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
+
+  <!-- include leaflet / slider css, js local files -->
+  <script src="https://cdn.jsdelivr.net/leaflet/1.0.0-rc.3/leaflet-src.js"></script>
+  <link href='https://api.mapbox.com/mapbox-assembly/v0.8.0/assembly.min.css' rel='stylesheet'>
+  <link href='https://api.mapbox.com/mapbox.js/v3.0.1/mapbox.css' rel='stylesheet'>
+
+  <!--link rel="stylesheet" href="public/leaflet-1/leaflet.css" /-->
+  <link rel="stylesheet" href="main.css">
+
+  <!-- jquery scripts and css -->
+  <script src="https://code.jquery.com/jquery-1.9.1.min.js"></script>
+  <script src="https://code.jquery.com/ui/1.9.2/jquery-ui.js"></script>
+  <script src="https://d3js.org/d3.v4.min.js"></script>
+  <link rel="stylesheet" href="https://code.jquery.com/ui/1.9.2/themes/base/jquery-ui.css" type="text/css">
+  <!-- Load Esri Leaflet from CDN -->
+  <script src="https://cdn.jsdelivr.net/leaflet.esri/2.0.2/esri-leaflet.js"></script>
+
+
+  <style type="text/css">
+    #map {
+      width: 100%;
+      height: 100%;
+      left: 1px;
+      top: -1px;
+      position: absolute;
+    }
+  </style>
+</head>
+
+
+<body>
+
+  <!-- provide the map with a div to live inside -->
+  <div id="map" style="width: 100%; height: 100%; position: absolute"></div>
+  <!-- end map -->
+
+
+  <!-- ui slider -->
+  <div id='slider' class='range w300 round py6 border--gray-light px12 leaflet-control'>
+    <input type='range' min="2416481" max="2418294" value="2416481" step="1" class="slider" />
+  </div>
+  <!-- end slider -->
+
+  <!-- temporal legend -->
+  <div id='temporal' class='py6 px12 border border--gray-light round bottom left wmax200'>
+    <h3 class='txt-bold'>Date: <span></span></h3>
+  </div>
+  <!-- end temporal -->
+
+  <script>
+    var myIcon = L.icon({
+      iconUrl: 'my-icon.png',
+      iconRetinaUrl: 'my-icon@2x.png',
+      iconSize: [1, 1],
+      iconAnchor: [1, 1],
+      popupAnchor: [-1, -1]
+    });
+
+    var mbAttr = 'Map data &copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors, ' +
+      '<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+      'Imagery © <a href="https://mapbox.com">Mapbox</a>';
+
+    var blanktile = L.esri.tiledMapLayer({
+        url: "https://gis.lib.uiowa.edu/gislib1/rest/services/brinton/brintonmap/MapServer"
+      }),
+
+      grayscale = L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoicmNzaGVwYXJkIiwiYSI6IjYwYjI0NzdmNDQwM2YzNTc1ODI2NWZhNTU1ZTVmNjY4In0.ct_UnOxwtV_WIGwzyG0Rxw', {
+        id: 'mapbox.light',
+        attribution: mbAttr
+      }),
+      dark = L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoicmNzaGVwYXJkIiwiYSI6IjYwYjI0NzdmNDQwM2YzNTc1ODI2NWZhNTU1ZTVmNjY4In0.ct_UnOxwtV_WIGwzyG0Rxw', {
+        id: 'mapbox.dark',
+        attribution: mbAttr
+      }),
+      opengeo = L.tileLayer.wms('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+      }),
+      stamenbackground = L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/terrain-background/{z}/{x}/{y}.{ext}', {
+        attribution: 'Map tiles by <a href="https://stamen.com">Stamen Design</a>, <a href="https://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        subdomains: 'abcd',
+        minZoom: 0,
+        maxZoom: 18,
+        ext: 'png'
+      }),
+
+      stamenmap = L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/terrain/{z}/{x}/{y}.{ext}', {
+        attribution: 'Map tiles by <a href="https://stamen.com">Stamen Design</a>, <a href="https://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        subdomains: 'abcd',
+        minZoom: 0,
+        maxZoom: 18,
+        ext: 'png'
+      });
+
+    //define the map
+    var map = L.map('map', {
+      center: [37.2, -87],
+      zoom: 6,
+      minZoom: 5,
+      maxZoom: 12,
+      layers: [blanktile],
+      zoomControl: false
+    });
+
+    //sets the map panning boundary so it can't go past the United States
+    var corner1 = L.latLng(51, -125),
+      corner2 = L.latLng(23, -69)
+    var bounds = L.latLngBounds(corner1, corner2);
+    map.setMaxBounds(bounds);
+
+    map.on('drag', function() {
+      map.panInsideBounds(bounds, {
+        animate: true
+      });
+    });
+
+    //add a scale bar
+    //L.control.scale().addTo(map);
+
+    //load the data asynchronously
+    d3.queue()
+      .defer(d3.json, 'data/Brinton_New.geojson') //the Brinton points layer
+      .await(drawMap); // load the layers after the map loads
+
+    //provide instructions for drawing the map
+    function drawMap(err, Brinton1) {
+
+      var blackCircleMarkers = L.geoJson(Brinton1, { //define layer with a variable
+        pointToLayer: function(feature, ll) {
+          return L.circleMarker(ll, {
+            radius: 7,
+            fillColor: "black",
+            color: "orange",
+            weight: 1,
+            opacity: 0.8,
+            fillOpacity: 0.5
+          })
+        }, //end pointToLayer
+
+        // restyle on mouseover, reset style on mouseout
+        onEachFeature: function(feature, layer) {
+
+          var props = layer.feature.properties;
+
+          // define what happens on mouseover
+          layer.on("mouseover", function(e) {
+            layer.setStyle({
+              radius: 7,
+              fillColor: "yellow",
+              color: "#3978BF",
+              weight: 1,
+              opacity: 0.8,
+              fillOpacity: 1.0
+            });
+          });
+          layer.bindPopup("<h3 style='font-size:20px'>" + props.Town + ", " + props.State + "</h3>" +
+            "<h4 style='font-size:12px'>" + "<br>" + props.Month + " " + props.Day + ", " + props.Year +
+            "<br>Venue: " + props.Venue +
+            "<br>Amount Made: " + props.Amount_Made_D +
+            "<br>House Take: " + props.House_Takes_P +
+            "<br>Notes: " + props.Notes + "</h4>"
+          );
+          /*
+                      // define what happens on click
+                      layer.on("click", function (e) {
+
+                        var props = layer.feature.properties;
+
+                        layer.bindPopup("<h3>" + props.Town + ", " + props.State + "</h3>" +
+                                          "<h4>" + props.Month + " " + props.Day + ", " + props.Year +
+                                          "<br>Venue: " + props.Venue +
+                                          "<br>Amount Made($): " + props.Amount_Made +
+                                          "<br>House Take($): " + props.House_takes +
+                                          "<br>Notes: " + props.Notes + "</h4>"
+                                          );
+
+                      });
+          */
+          // define what happens on mouseout
+          layer.on("mouseout", function(e) {
+
+            // style the points
+            layer.setStyle({
+              radius: 7,
+              fillColor: "black",
+              color: "orange",
+              weight: 1,
+              opacity: 0.8,
+              fillOpacity: 0.5
+            });
+
+          });
+
+        } // end onEachFeature
+
+      }).addTo(map);
+
+
+      var orangeCircleMarkers = L.geoJson(Brinton1, { //define layer with a variable
+        pointToLayer: function(feature, ll) {
+          return L.circleMarker(ll, {
+            radius: 7,
+            fillColor: "orange",
+            color: "black",
+            weight: 1,
+            opacity: 0.8,
+            fillOpacity: 0.5
+          })
+        }, //end pointToLayer
+      });
+
+      //fit the map to the extent of the circle markers upon drawing
+      map.fitBounds(blackCircleMarkers.getBounds());
+
+      // define currentDate as the dynamic slider entry
+      var currentDate = $('.slider').val();
+
+      sequenceUI(orangeCircleMarkers); // calls the function to make the time slider
+      createTemporalLegend(currentDate); // produces temporal legend upon map loading
+      updateCircles(orangeCircleMarkers);
+
+    }; //end drawMap function
+
+    // add a temporal legend in sync with the UI slider
+    function createTemporalLegend(currentDate) {
+
+      var temporalLegend = L.control({
+        position: 'bottomleft' // place the temporal legend at bottom left corner
+      });
+
+      // when added to the map
+      temporalLegend.onAdd = function(map) {
+
+        var div = L.DomUtil.get("temporal"); // get the style settings
+
+        // disable the mouse events
+        L.DomEvent.disableScrollPropagation(div);
+        L.DomEvent.disableClickPropagation(div);
+
+        return div; // return the style settings
+
+      }
+
+      // convert the Julian Day Number to the Gregorian Calendar Date
+      var X = parseFloat(currentDate) + 0.5;
+      var Z = Math.floor(X); //Get day without time
+      var F = X - Z; //Get time
+      var Y = Math.floor((Z - 1867216.25) / 36524.25);
+      var A = Z + 1 + Y - Math.floor(Y / 4);
+      var B = A + 1524;
+      var C = Math.floor((B - 122.1) / 365.25);
+      var D = Math.floor(365.25 * C);
+      var G = Math.floor((B - D) / 30.6001);
+      //must get number less than or equal to 12)
+      var month_p = (G < 13.5) ? (G - 1) : (G - 13);
+      //if Month is January or February, or the rest of year
+      var year = (month_p < 2.5) ? (C - 4715) : (C - 4716);
+      month_p -= 1; //Handle JavaScript month format
+      var month = month_p + 1
+      var UT = B - D - Math.floor(30.6001 * G) + F;
+      var day = Math.floor(UT);
+      //Determine time
+      UT -= Math.floor(UT);
+      UT *= 24;
+      var hour = Math.floor(UT);
+      UT -= Math.floor(UT);
+      UT *= 60;
+      var minute = Math.floor(UT);
+      // End conversion of Julian Day Number to Gregorian Calendar date
+
+      $('#temporal span').html(month + "/" + day + "/" + year); // change grade value to that currently selected by UI slider
+
+      temporalLegend.addTo(map); // add the temporal legend to the map
+
+    }; // end createTemporalLegend function
+
+    // add a UI slider
+    function sequenceUI(orangeCircleMarkers) {
+
+      // create Leaflet control for the slider
+      var sliderControl = L.control({
+        position: 'bottomleft'
+      });
+
+      // add controls to the slider
+      sliderControl.onAdd = function(map) {
+
+        var controls = L.DomUtil.get("slider");
+
+        L.DomEvent.disableScrollPropagation(controls);
+        L.DomEvent.disableClickPropagation(controls);
+
+        return controls;
+
+      }
+
+      // add the control to the map
+      sliderControl.addTo(map);
+
+      $('.slider') // call the slider
+        .on('input change', function() { // when the slider is moved...
+          var currentDate = $(this).val(); // identifies the year selected
+          createTemporalLegend(currentDate);
+          updateCircles(orangeCircleMarkers);
+        });
+
+    }; // End sequenceUI function
+
+    function updateCircles(orangeCircleMarkers) {
+
+      var currentDate = $('.slider').val();
+
+      orangeCircleMarkers.eachLayer(function(layer) {
+        if (layer.feature.properties.Julian_Date <= currentDate) {
+          layer.addTo(map);
+        } else if (layer.feature.properties.Julian_Date > currentDate) {
+          map.removeLayer(layer);
+        }
+      });
+
+    }; // End updateCircles function
+  </script>
+
+</body>
+
+</html>
