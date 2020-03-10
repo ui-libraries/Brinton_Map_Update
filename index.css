@@ -1,0 +1,47 @@
+#slider {
+  position: absolute;
+  height: 40px;
+  bottom: 0px;
+  left: 175px;
+  z-index: 1000;
+  background-color: #FFFFFF;
+  border-left: 1px solid;
+  border-right: 1px solid;
+  border-top: 1px solid;
+  border-bottom: 1px solid
+}
+
+#temporal {
+  background-color: #FFFFFF;
+  height: 40px
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+  left: 1px;
+  top: -1px;
+  position: absolute;
+}
+
+.easy-button-button {
+  display: block !important;
+}
+
+.tag-filter-tags-container {
+  left: 30px;
+}
+
+h3 {
+  padding: 0px;
+  height: 10px;
+  color: orange;
+  font-size: 15px;
+  font-family: "Montserrat";
+}
+
+h4 {
+  padding: 0px;
+  font-size: 12px;
+  font-family: "Montserrat";
+}
