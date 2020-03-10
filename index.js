@@ -17,8 +17,8 @@ var blanktile = L.esri.tiledMapLayer({
 //define the map
 var map = L.map('map', {
   center: [37.2, -87],
-  zoom: 6,
-  minZoom: 6,
+  //zoom: 6,
+  minZoom: 5,
   maxZoom: 12,
   layers: [blanktile],
   zoomControl: false
