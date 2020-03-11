@@ -53,6 +53,7 @@ function drawMap(err, Brinton1) {
       //push properties into the tags array for later referencing by the filter buttons
       tags.push(props.Year);
       tags.push(props.Month);
+      tags.push(props.Town);
       tags.push(props.State);
       tags.push(props.Amount_Made_ranges);
       tags.push(props.House_Takes_ranges);
@@ -127,6 +128,13 @@ function drawMap(err, Brinton1) {
     data: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
     filterOnEveryClick: true,
     icon: '<i class="far fa-calendar-alt"></i>',
+  }).addTo(map);
+
+  //towns
+  L.control.tagFilterButton({
+    data: ['Ada', 'Ainsworth', 'Albert Lea', 'Algona', 'Alvin', 'Ames', 'Anamosa', 'Arkansas City', 'Austin', 'Baltimore', 'Barnes City', 'Beatrice', 'Belle Plaine', 'Belleville', 'Blairstown', 'Blue Rapids', 'Boone', 'Brenham', 'Brighton', 'Britt', 'Brooklyn', 'Brownville', 'Bryan', 'Burlington', 'Caney', 'Cascade', 'Cedar Rapids', 'Centerville', 'Central City', 'Chanute', 'Chapin', 'Charles City', 'Chatfield', 'Chelsea', 'Cherryvale', 'Chicago', 'Chillicothe', 'Claremore', 'Clarion', 'Coalgate', 'Coffeyville', 'Corning', 'Crawfordsville', 'Cresco', 'Creston', 'David City', 'Deep River', 'Delavan', 'Delta', 'Denison', 'Denton', 'Des Moines', 'Dunlap', 'Eagle Grove', 'Eagle Lake', 'Eddyville', 'Edgar', 'Eldon', 'Eldora', 'Ellsworth', 'Essex', 'Estherville', 'Fairbury', 'Fairfield', 'Fairmont', 'Faribault', 'Farmington', 'Fonda', 'Fort Dodge', 'Fredericksburg', 'Fremont', 'Gainesville', 'Galena', 'Galveston', 'Girard', 'Granville', 'Greenfield', 'Grinnell', 'Hamburg', 'Hamilton', 'Hampton', 'Harper', 'Haskins', 'Hawatha', 'Hearne', 'Hedrick', 'Hendrick', 'Hillsboro', 'Horton', 'Hot Springs', 'Hutchinson', 'Ida Grove', 'Independence', 'Iowa City', 'Iowa Falls', 'Kalona', 'Kaufman', 'Keota', 'Keswick', 'Knoxville', 'Lawrence', 'Leon', 'Logan', 'Lyndon', 'Lyons', 'Malcom', 'Manchester', 'Manhattan', 'Mankato', 'Marshalltown', 'Martinsburg', 'Marysville', 'Mason City', 'McKinney', 'Mexia', 'Miami', 'Minneapolis', 'Montezuma', 'Montezumma', 'Monticello', 'Mount Pleasant', 'Nashua', 'Nebraska City', 'Nevada', 'New Hampton', 'New London', 'New Ulm', 'New York', 'Newkirk', 'Newton', 'Norfolk', 'Norman', 'North English', 'Northfield', 'Norway', 'Odebolt', 'Oelwein', 'Oklahoma City', 'Ollie', 'Osage', 'Osage City', 'Osawatomie', 'Osceola', 'Oskaloosa', 'Ottumwa', 'Owatonna', 'Perry', 'Philadelphia', 'Pittsburg', 'Plattsburg', 'Princeton', 'Purcell', 'Quincy', 'Red Oak', 'Richland', 'Richmond', 'Riverside', 'Rochester', 'Rubio', 'Sabetha', 'Sac City', 'Saint Charles', 'Saint James', 'Saint Louis', 'Saint Peter', 'Salina', 'San Antonia', 'Sedan', 'Sheffield', 'Shenandoah', 'Sigourney', 'South English', 'St. James', 'Storm Lake', 'Sulphur', 'Summer', 'Tama', 'Tecumseh', 'Tipton', 'Trenton', 'Valley', 'Vinita', 'Vinton', 'Wahoo', 'Waseca', 'Washington', 'Waterville', 'Waverly', 'Waxahachie', 'Wayland', 'Webster', 'Webster City', 'Wellington', 'Wellman', 'Wells', 'West Branch', 'West Chester', 'West Liberty', 'West Union', 'Wharton', 'What Cheer', 'Wilber', 'Williamsburg', 'Winfield', 'Winnebago City', 'Winona', 'Woodbine', 'Wymore', 'Yates Center'],
+    filterOnEveryClick: true,
+    icon: '<i class="fas fa-map-marked-alt"></i>',
   }).addTo(map);
 
   //states and territories
