@@ -24,6 +24,12 @@
   position: absolute;
 }
 
+#info_text {
+  background-color: #FFFFFF;
+  padding-bottom: 10px;
+  padding-left: 5px;
+}
+
 .easy-button-button {
   display: block !important;
 }

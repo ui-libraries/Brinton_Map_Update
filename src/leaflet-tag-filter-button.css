@@ -9,8 +9,8 @@
     padding-left: 5px;
 }
 
-
 .leaflet-bar.easy-button-container.leaflet-control {
+    top:0px;
     text-align: left !important;
 }
 

@@ -30,6 +30,8 @@ var corner1 = L.latLng(51, -125),
 var bounds = L.latLngBounds(corner1, corner2);
 map.setMaxBounds(bounds);
 
+
+
 //add a scale bar
 L.control.scale({
   position: 'bottomright'
@@ -53,6 +55,7 @@ function drawMap(err, Brinton1) {
       //push properties into the tags array for later referencing by the filter buttons
       tags.push(props.Year);
       tags.push(props.Month);
+      tags.push(props.Day);
       tags.push(props.Town);
       tags.push(props.State);
       tags.push(props.Amount_Made_ranges);
@@ -120,14 +123,21 @@ function drawMap(err, Brinton1) {
   L.control.tagFilterButton({
     data: ['1904', '1905', '1906', '1907', '1908'],
     filterOnEveryClick: true,
-    icon: '<i class="fa fa-pagelines"></i>',
+    icon: '<i class="fas fa-sun"></i>',
   }).addTo(map);
 
   //months
   L.control.tagFilterButton({
     data: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
     filterOnEveryClick: true,
-    icon: '<i class="far fa-calendar-alt"></i>',
+    icon: '<i class="fas fa-calendar"></i>',
+  }).addTo(map);
+
+  //days
+  L.control.tagFilterButton({
+    data: ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', '30', '31'],
+    filterOnEveryClick: true,
+    icon: '<i class="fas fa-calendar-day"></i>',
   }).addTo(map);
 
   //towns
@@ -174,7 +184,7 @@ function drawMap(err, Brinton1) {
   map.on('click', function() {
     map.dragging.enable();
   });
-
+/*
   var orangeCircleMarkers = L.geoJson(Brinton1, { //define layer with a variable
     pointToLayer: function(feature, ll) {
       return L.circleMarker(ll, {
@@ -231,16 +241,20 @@ function drawMap(err, Brinton1) {
     } //end onEachFeature
 
   });
-
+*/
   //fit the map to the extent of the circle markers upon drawing
   map.fitBounds(blackCircleMarkers.getBounds());
 
   //define currentDate as the dynamic slider entry
   var currentDate = $('.slider').val();
-
+/*
   sequenceUI(orangeCircleMarkers); // calls the function to make the time slider
   createTemporalLegend(currentDate); // produces temporal legend upon map loading
   updateCircles(orangeCircleMarkers);
+*/
+  sequenceUI(blackCircleMarkers); // calls the function to make the time slider
+  createTemporalLegend(currentDate); // produces temporal legend upon map loading
+  updateCircles(blackCircleMarkers);
 
   //define layers
   var overlays = {
@@ -308,7 +322,7 @@ function createTemporalLegend(currentDate) {
 }; //end createTemporalLegend function
 
 //add a UI slider
-function sequenceUI(orangeCircleMarkers) {
+function sequenceUI(blackCircleMarkers) {
 
   //create Leaflet control for the slider
   var sliderControl = L.control({
@@ -335,7 +349,7 @@ function sequenceUI(orangeCircleMarkers) {
     .on('input change', function() { //when the slider is moved...
       var currentDate = $(this).val(); //identifies the year selected
       createTemporalLegend(currentDate);
-      updateCircles(orangeCircleMarkers);
+      updateCircles(blackCircleMarkers);
     });
 
   $('.slider')
@@ -350,11 +364,11 @@ function sequenceUI(orangeCircleMarkers) {
 
 }; //End sequenceUI function
 
-function updateCircles(orangeCircleMarkers) {
+function updateCircles(blackCircleMarkers) {
 
   var currentDate = $('.slider').val();
 
-  orangeCircleMarkers.eachLayer(function(layer) {
+  blackCircleMarkers.eachLayer(function(layer) {
     if (layer.feature.properties.Julian_Date <= currentDate) {
       layer.addTo(map);
     } else if (layer.feature.properties.Julian_Date > currentDate) {
@@ -363,3 +377,18 @@ function updateCircles(orangeCircleMarkers) {
   });
 
 }; //End updateCircles function
+
+var filtersTitle = L.control({
+  position: 'topleft' //place the temporal legend at bottom left corner
+});
+
+//when added to the map
+filtersTitle.onAdd = function(map) {
+
+  var div = L.DomUtil.get("info_text"); //get the style settings
+
+  return div; //return the style settings
+
+}
+
+filtersTitle.addTo(map); //add the temporal legend to the map
